@@ -24,6 +24,30 @@ hide:
 
 # Configuration
 
+## Setting Configuration Values
+
+There are three ways to pass in configuration:
+
+- Using the `~/.pyiceberg.yaml` configuration file
+- Through environment variables
+- By passing in credentials through the CLI or the Python API
+
+The configuration file is recommended since that's the easiest way to manage the credentials.
+
+To change the path searched for the `.pyiceberg.yaml`, you can overwrite the `PYICEBERG_HOME` environment variable.
+
+Another option is through environment variables:
+
+```sh
+export PYICEBERG_CATALOG__DEFAULT__URI=thrift://localhost:9083
+export PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID=username
+export PYICEBERG_CATALOG__DEFAULT__S3__SECRET_ACCESS_KEY=password
+```
+
+The environment variable picked up by Iceberg starts with `PYICEBERG_` and then follows the yaml structure below, where a double underscore `__` represents a nested field, and the underscore `_` is converted into a dash `-`.
+
+For example, `PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID`, sets `s3.access-key-id` on the `default` catalog.
+
 ## Tables
 
 Iceberg tables support table properties to configure table behavior.
@@ -36,7 +60,7 @@ Iceberg tables support table properties to configure table behavior.
 | `write.parquet.compression-level`      | Integer                           | null    | Parquet compression level for the codec. If not set, it is up to PyIceberg                  |
 | `write.parquet.row-group-limit`        | Number of rows                    | 1048576 | The upper bound of the number of entries within a single row group                          |
 | `write.parquet.page-size-bytes`        | Size in bytes                     | 1MB     | Set a target threshold for the approximate encoded size of data pages within a column chunk |
-| `write.parquet.page-row-limit`         | Number of rows                    | 20000   | Set a target threshold for the approximate encoded size of data pages within a column chunk |
+| `write.parquet.page-row-limit`         | Number of rows                    | 20000   | Set a target threshold for the maximum number of rows within a column chunk                 |
 | `write.parquet.dict-size-bytes`        | Size in bytes                     | 2MB     | Set the dictionary page size limit per row group                                            |
 | `write.metadata.previous-versions-max` | Integer                           | 100     | The max number of previous version metadata files to keep before deleting after commit.     |
 
@@ -77,18 +101,20 @@ For the FileIO there are several configuration options available:
 
 <!-- markdown-link-check-disable -->
 
-| Key                  | Example                  | Description                                                                                                                                                                                                                                               |
-| -------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key                  | Example                    | Description                                                                                                                                                                                                                                               |
+|----------------------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | s3.endpoint          | <https://10.0.19.25/>      | Configure an alternative endpoint of the S3 service for the FileIO to access. This could be used to use S3FileIO with any s3-compatible object storage service that has a different endpoint, or access a private S3 endpoint in a virtual private cloud. |
-| s3.access-key-id     | admin                    | Configure the static access key id used to access the FileIO.                                                                                                                                                                                             |
-| s3.secret-access-key | password                 | Configure the static secret access key used to access the FileIO.                                                                                                                                                                                         |
-| s3.session-token     | AQoDYXdzEJr...           | Configure the static session token used to access the FileIO.                                                                                                                                                                                             |
-| s3.signer            | bearer                   | Configure the signature version of the FileIO.                                                                                                                                                                                                            |
+| s3.access-key-id     | admin                      | Configure the static access key id used to access the FileIO.                                                                                                                                                                                             |
+| s3.secret-access-key | password                   | Configure the static secret access key used to access the FileIO.                                                                                                                                                                                         |
+| s3.session-token     | AQoDYXdzEJr...             | Configure the static session token used to access the FileIO.                                                                                                                                                                                             |
+| s3.session-name      | session                    | An optional identifier for the assumed role session.                                                                                                                                                                                                      |
+| s3.role-arn          | arn:aws:...                | AWS Role ARN. If provided instead of access_key and secret_key, temporary credentials will be fetched by assuming this role.                                                                                                                              |
+| s3.signer            | bearer                     | Configure the signature version of the FileIO.                                                                                                                                                                                                            |
 | s3.signer.uri        | <http://my.signer:8080/s3> | Configure the remote signing uri if it differs from the catalog uri. Remote signing is only implemented for `FsspecFileIO`. The final request is sent to `<s3.signer.uri>/<s3.signer.endpoint>`.                                                          |
-| s3.signer.endpoint   | v1/main/s3-sign          | Configure the remote signing endpoint. Remote signing is only implemented for `FsspecFileIO`. The final request is sent to `<s3.signer.uri>/<s3.signer.endpoint>`. (default : v1/aws/s3/sign).                                                            |
-| s3.region            | us-west-2                | Sets the region of the bucket                                                                                                                                                                                                                             |
+| s3.signer.endpoint   | v1/main/s3-sign            | Configure the remote signing endpoint. Remote signing is only implemented for `FsspecFileIO`. The final request is sent to `<s3.signer.uri>/<s3.signer.endpoint>`. (default : v1/aws/s3/sign).                                                            |
+| s3.region            | us-west-2                  | Sets the region of the bucket                                                                                                                                                                                                                             |
 | s3.proxy-uri         | <http://my.proxy.com:8080> | Configure the proxy server to be used by the FileIO.                                                                                                                                                                                                      |
-| s3.connect-timeout   | 60.0                     | Configure socket connection timeout, in seconds.                                                                                                                                                                                                          |
+| s3.connect-timeout   | 60.0                       | Configure socket connection timeout, in seconds.                                                                                                                                                                                                          |
 
 <!-- markdown-link-check-enable-->
 
@@ -160,26 +186,6 @@ Alternatively, you can also directly set the catalog implementation:
 | --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
 | type            | rest                         | Type of catalog, one of `rest`, `sql`, `hive`, `glue`, `dymamodb`. Default to `rest`             |
 | py-catalog-impl | mypackage.mymodule.MyCatalog | Sets the catalog explicitly to an implementation, and will fail explicitly if it can't be loaded |
-
-There are three ways to pass in configuration:
-
-- Using the `~/.pyiceberg.yaml` configuration file
-- Through environment variables
-- By passing in credentials through the CLI or the Python API
-
-The configuration file is recommended since that's the easiest way to manage the credentials.
-
-Another option is through environment variables:
-
-```sh
-export PYICEBERG_CATALOG__DEFAULT__URI=thrift://localhost:9083
-export PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID=username
-export PYICEBERG_CATALOG__DEFAULT__S3__SECRET_ACCESS_KEY=password
-```
-
-The environment variable picked up by Iceberg starts with `PYICEBERG_` and then follows the yaml structure below, where a double underscore `__` represents a nested field, and the underscore `_` is converted into a dash `-`.
-
-For example, `PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID`, sets `s3.access-key-id` on the `default` catalog.
 
 ### REST Catalog
 
