@@ -113,3 +113,6 @@ docs-serve:
 
 docs-build:
 	poetry run mkdocs build -f mkdocs/mkdocs.yml --strict
+table:
+	poetry run python test_upsert/table.py
+	poetry run python test_upsert/insert.py
