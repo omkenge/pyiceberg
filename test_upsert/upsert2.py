@@ -30,9 +30,9 @@ students = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.8,
-        "roll_id":1
+        "roll_id":13
     },
-    {"student_id": 1202, "name": "Bob Smith", "department": "Mathsdematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":2},
+    {"student_id": 1202, "name": "Bobiii Smith", "department": "Mathsdematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":2},
 ]
 
 # Create PyArrow Table with strict schema
@@ -50,6 +50,7 @@ arrow_table = pa.Table.from_pylist(
     ),
 )
 print(table.scan().to_pandas())
-#table.upsert(arrow_table, join_cols=["student_id","roll_id"])
-
+table.upsert(arrow_table, join_cols=["student_id","roll_id"])
+print("New")
+print(table.scan().to_pandas())
 
