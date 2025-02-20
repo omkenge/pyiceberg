@@ -30,13 +30,22 @@ from pyiceberg.expressions import (
 )
 
 
-def create_match_filter(df: pyarrow_table, join_cols: list[str]) -> BooleanExpression:
+def create_match_filter(df: pa.Table, join_cols: list[str]) -> BooleanExpression:
     unique_keys = df.select(join_cols).group_by(join_cols).aggregate([])
 
     if len(join_cols) == 1:
+        # Single join column: Use the In expression
         return In(join_cols[0], unique_keys[0].to_pylist())
     else:
-        return Or(*[And(*[EqualTo(col, row[col]) for col in join_cols]) for row in unique_keys.to_pylist()])
+        # Build a list of AND expressions for each unique key
+        filters = [
+            And(*[EqualTo(col, row[col]) for col in join_cols])
+            for row in unique_keys.to_pylist()
+        ]
+        # If there's only one condition, return it directly instead of wrapping it in an Or
+        if len(filters) == 1:
+            return filters[0]
+        return Or(*filters)
 
 
 def has_duplicate_rows(df: pyarrow_table, join_cols: list[str]) -> bool:
