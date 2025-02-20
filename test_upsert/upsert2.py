@@ -25,14 +25,15 @@ table = catalog.load_table("om.students")
 # Sample student data
 students = [
     {
-        "student_id": 1021,
-        "name": "Changes Johnson",
+        "student_id": 101,
+        "name": "OMMM Johnson",
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.8,
-        "roll_id":13
+        "roll_id":1
     },
-    {"student_id": 1202, "name": "Bobiii Smith", "department": "Mathsdematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":2},
+    {"student_id": 1202, "name": "ds Smith", "department": "ds", "enrollment_date": datetime(2024, 2, 15), "gpa": 3.5,"roll_id":23},
+    {"student_id": 12042, "name": "Okkk Smith", "department": "Mathsdematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":2},
 ]
 
 # Create PyArrow Table with strict schema
