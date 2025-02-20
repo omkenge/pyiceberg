@@ -42,10 +42,14 @@ def create_match_filter(df: pa.Table, join_cols: list[str]) -> BooleanExpression
             And(*[EqualTo(col, row[col]) for col in join_cols])
             for row in unique_keys.to_pylist()
         ]
-        # If there's only one condition, return it directly instead of wrapping it in an Or
+        # If no filters were produced, return an expression that always evaluates to False.
+        if not filters:
+            return In(join_cols[0], [])
+        # If there's exactly one condition, return it directly.
         if len(filters) == 1:
             return filters[0]
-        return Or(*filters)
+        # Otherwise, combine conditions pairwise using reduce.
+        return functools.reduce(lambda a, b: Or(a, b), filters)
 
 
 def has_duplicate_rows(df: pyarrow_table, join_cols: list[str]) -> bool:
@@ -95,7 +99,9 @@ def get_rows_to_update(source_table: pa.Table, target_table: pa.Table, join_cols
     if rows_to_update:
         rows_to_update_table = pa.concat_tables(rows_to_update)
     else:
-        rows_to_update_table = pa.Table.from_arrays([], names=source_table.column_names)
+        empty_arrays = [pa.array([], type=field.type) for field in source_table.schema]
+        rows_to_update_table = pa.Table.from_arrays(empty_arrays, schema=source_table.schema)
+
 
     common_columns = set(source_table.column_names).intersection(set(target_table.column_names))
     rows_to_update_table = rows_to_update_table.select(list(common_columns))
