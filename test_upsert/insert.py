@@ -20,7 +20,7 @@ catalog = load_catalog(
 )
 
 # Load existing table
-table = catalog.load_table("school.students")
+table = catalog.load_table("om.students")
 
 # Sample student data
 students = [
@@ -30,8 +30,9 @@ students = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.8,
+        "roll_id":1
     },
-    {"student_id": 102, "name": "Bob Smith", "department": "Mathematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5},
+    {"student_id": 102, "name": "Bob Smith", "department": "Mathematics", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":2},
 ]
 
 # Create PyArrow Table with strict schema
@@ -44,6 +45,7 @@ arrow_table = pa.Table.from_pylist(
             ("department", pa.string(), False),
             ("enrollment_date", pa.timestamp("us"), False),
             ("gpa", pa.float64(), False),
+            ("roll_id",pa.int32(),False)
         ]
     ),
 )
