@@ -21,7 +21,7 @@ catalog = load_catalog(
 
 # Create namespace if missing
 try:
-    catalog.create_namespace("school")
+    catalog.create_namespace("om")
 except Exception:
     pass
 
@@ -32,16 +32,18 @@ student_schema = Schema(
     NestedField(3, "department", StringType(), required=True),
     NestedField(4, "enrollment_date", TimestampType(), required=True),
     NestedField(5, "gpa", DoubleType(), required=True),
+    NestedField(6,"roll_id",IntegerType(),required=True),
+
 )
 
 partition_spec = PartitionSpec(PartitionField(4, 1000, YearTransform(), "enrollment_year"))
 
 # Create table with clean path settings
 table = catalog.create_table(
-    identifier="school.students",
+    identifier="om.students",
     schema=student_schema,
     partition_spec=partition_spec,
-    location="s3://warehouse/students",
+    location="s3://warehouse/om",
     properties={"write.object-storage.enabled": "false", "write.data.path": "s3://warehouse/students/data"},
 )
 
