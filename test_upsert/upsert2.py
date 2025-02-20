@@ -21,17 +21,17 @@ catalog = load_catalog(
 
 # Load existing table
 table = catalog.load_table("om.students")
-import pyarrow as pa
-from datetime import datetime
 
-target_schema = pa.schema([
-    pa.field("student_id", pa.int32(), nullable=False),
-    pa.field("name", pa.string(), nullable=False),
-    pa.field("department", pa.string(), nullable=False),
-    pa.field("enrollment_date", pa.timestamp("us"), nullable=False),
-    pa.field("gpa", pa.float64(), nullable=False),
-    pa.field("roll_id", pa.int32(), nullable=False),
-])
+target_schema = pa.schema(
+    [
+        pa.field("student_id", pa.int32(), nullable=False),
+        pa.field("name", pa.string(), nullable=False),
+        pa.field("department", pa.string(), nullable=False),
+        pa.field("enrollment_date", pa.timestamp("us"), nullable=False),
+        pa.field("gpa", pa.float64(), nullable=False),
+        pa.field("roll_id", pa.int32(), nullable=False),
+    ]
+)
 students_new = [
     {
         "student_id": 110,  # New student_id
@@ -39,7 +39,7 @@ students_new = [
         "department": "Biology",
         "enrollment_date": datetime(2023, 10, 1),
         "gpa": 3.6,
-        "roll_id": 3       # New roll_id
+        "roll_id": 3,  # New roll_id
     },
     {
         "student_id": 120,
@@ -47,8 +47,8 @@ students_new = [
         "department": "Physics",
         "enrollment_date": datetime(2023, 11, 1),
         "gpa": 3.7,
-        "roll_id": 4
-    }
+        "roll_id": 4,
+    },
 ]
 
 arrow_table_new = pa.Table.from_pylist(students_new, schema=target_schema)
@@ -60,7 +60,7 @@ students_update = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.9,  # Updated GPA
-        "roll_id": 1
+        "roll_id": 1,
     }
 ]
 
@@ -73,7 +73,7 @@ students_partial = [
         "department": "Chemistry",
         "enrollment_date": datetime(2024, 1, 1),
         "gpa": 3.4,
-        "roll_id": 1   # roll_id 1 exists, but student_id does not match target (101,1)
+        "roll_id": 1,  # roll_id 1 exists, but student_id does not match target (101,1)
     }
 ]
 
@@ -86,7 +86,7 @@ students_duplicate = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.8,
-        "roll_id": 1
+        "roll_id": 1,
     },
     {
         "student_id": 101,
@@ -94,8 +94,8 @@ students_duplicate = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.8,
-        "roll_id": 1
-    }
+        "roll_id": 1,
+    },
 ]
 
 arrow_table_dup = pa.Table.from_pylist(students_duplicate, schema=target_schema)
@@ -109,7 +109,7 @@ students_mixed = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 3.85,
-        "roll_id": 1
+        "roll_id": 1,
     },
     # New record: composite key (1100, 30) not in target → insert
     {
@@ -118,8 +118,8 @@ students_mixed = [
         "department": "Biology",
         "enrollment_date": datetime(2023, 10, 5),
         "gpa": 3.65,
-        "roll_id": 30
-    }
+        "roll_id": 30,
+    },
 ]
 
 arrow_table_mixed = pa.Table.from_pylist(students_mixed, schema=target_schema)
@@ -135,10 +135,17 @@ students = [
         "department": "Computer Science",
         "enrollment_date": datetime(2023, 9, 1),
         "gpa": 9.98,
-        "roll_id":1
+        "roll_id": 1,
     },
-    {"student_id": 10111, "name": "OM Smith", "department": "SK", "enrollment_date": datetime(2024, 2, 15), "gpa": 3.5,"roll_id":99},
-    #{"student_id": 1042, "name": "SK Smith", "department": "SK", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":233},
+    {
+        "student_id": 10111,
+        "name": "OM Smith",
+        "department": "SK",
+        "enrollment_date": datetime(2024, 2, 15),
+        "gpa": 3.5,
+        "roll_id": 99,
+    },
+    # {"student_id": 1042, "name": "SK Smith", "department": "SK", "enrollment_date": datetime(2024, 1, 15), "gpa": 3.5,"roll_id":233},
 ]
 
 # Create PyArrow Table with strict schema
@@ -151,12 +158,11 @@ arrow_table = pa.Table.from_pylist(
             ("department", pa.string(), False),
             ("enrollment_date", pa.timestamp("us"), False),
             ("gpa", pa.float64(), False),
-            ("roll_id",pa.int32(),False)
+            ("roll_id", pa.int32(), False),
         ]
     ),
 )
 print(table.scan().to_pandas())
-table.upsert(arrow_table_mixed, join_cols=["student_id","roll_id"])
+table.upsert(arrow_table_mixed, join_cols=["student_id", "roll_id"])
 print("New")
 print(table.scan().to_pandas())
-

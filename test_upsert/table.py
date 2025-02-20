@@ -32,8 +32,7 @@ student_schema = Schema(
     NestedField(3, "department", StringType(), required=True),
     NestedField(4, "enrollment_date", TimestampType(), required=True),
     NestedField(5, "gpa", DoubleType(), required=True),
-    NestedField(6,"roll_id",IntegerType(),required=True),
-
+    NestedField(6, "roll_id", IntegerType(), required=True),
 )
 
 partition_spec = PartitionSpec(PartitionField(4, 1000, YearTransform(), "enrollment_year"))
