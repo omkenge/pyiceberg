@@ -32,22 +32,31 @@ target_schema = pa.schema(
         pa.field("roll_id", pa.int32(), nullable=False),
     ]
 )
+######################################################
 students_new = [
     {
-        "student_id": 110,  # New student_id
+        "student_id": 1210,  # New student_id
         "name": "New Student",
         "department": "Biology",
         "enrollment_date": datetime(2023, 10, 1),
         "gpa": 3.6,
-        "roll_id": 3,  # New roll_id
+        "roll_id": 32,  # New roll_id
     },
     {
-        "student_id": 120,
+        "student_id": 1220,
         "name": "Another Student",
         "department": "Physics",
         "enrollment_date": datetime(2023, 11, 1),
         "gpa": 3.7,
-        "roll_id": 4,
+        "roll_id": 42,
+    },
+        {
+        "student_id": 12202,
+        "name": "Another Student",
+        "department": "Physics",
+        "enrollment_date": datetime(2023, 11, 1),
+        "gpa": 3.7,
+        "roll_id": 422,
     },
 ]
 
@@ -102,7 +111,7 @@ students_partial = [
         "department": "Chemistry",
         "enrollment_date": datetime(2024, 1, 1),
         "gpa": 3.4,
-        "roll_id": 2,  # roll_id 1 exists, but student_id does not match target (101,1)
+        "roll_id": 2,  # roll_id 2 exists, but student_id does not match target (101,2)
     },
 
 ]
@@ -203,9 +212,9 @@ arrow_table = pa.Table.from_pylist(
     ),
 )
 print(table.scan().to_pandas())
-# join_cols=["student_id", "roll_id"]
-# unique_keys = arrow_table_new.select(join_cols).group_by(join_cols).aggregate([])
-# print("Unique keys:", unique_keys.to_pylist())
+join_cols=["student_id", "roll_id"]
+unique_keys = arrow_table_new.select(join_cols).group_by(join_cols).aggregate([])
+print("Unique keys:", unique_keys.to_pylist())
 #################################################
 # Only Update (with 2 new Records) (Succesfull)
 # table.upsert(arrow_table_update_2, join_cols=["student_id", "roll_id"])
@@ -214,12 +223,13 @@ print(table.scan().to_pandas())
 # table.upsert(arrow_table_mixed, join_cols=["student_id", "roll_id"])
 ##################################################
 # Only insert 
-# table.upsert(arrow_table_new, join_cols=["student_id", "roll_id"])
+table.upsert(arrow_table_new, join_cols=["student_id", "roll_id"],when_matched_update_all=False,when_not_matched_insert_all=True)
 ###################################################
 # Only Update (with 1 new Records)
 # table.upsert(arrow_table_update_1, join_cols=["student_id", "roll_id"])
 ##################################################
 # Partial (Treat as Insert Only)
-table.upsert(arrow_table_partial, join_cols=["student_id", "roll_id"])
+#table.upsert(arrow_table_partial, join_cols=["student_id", "roll_id"],when_matched_update_all=False)
+#################################################
 print("New")
 print(table.scan().to_pandas())
