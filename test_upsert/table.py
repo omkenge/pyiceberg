@@ -43,7 +43,7 @@ table = catalog.create_table(
     schema=student_schema,
     partition_spec=partition_spec,
     location="s3://warehouse/om",
-    properties={"write.object-storage.enabled": "false", "write.data.path": "s3://warehouse/students/data"},
+    properties={"write.object-storage.enabled": "false"},
 )
 
 print("✅ Table created successfully!")
