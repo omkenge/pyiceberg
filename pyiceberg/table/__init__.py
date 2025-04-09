@@ -15,7 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 from __future__ import annotations
-
+from datetime import datetime
+from typing import Optional, Set, List
+from pyarrow.fs import FileSystem, FileSelector, FileType
+from pyiceberg.io import FileIO
+from pyiceberg.io import FileIO
+from pyiceberg.typedef import EMPTY_DICT
 import itertools
 import uuid
 import warnings
@@ -748,7 +753,7 @@ class Transaction:
             return self._table
         else:
             return self._table
-
+    
 
 class CreateTableTransaction(Transaction):
     """A transaction that involves the creation of a a new table."""
@@ -897,7 +902,108 @@ class Table:
             An Identifier tuple of the table name
         """
         return self._identifier
+    def delete_orphan_files(
+        self,
+        older_than: Optional[datetime] = None,
+        dry_run: bool = False,
+        case_sensitive: bool = True,
+    ) -> List[str]:
+        """
+        Identify and delete orphan files for this table.
 
+        Args:
+            older_than: Only consider files older than this timestamp
+            dry_run: If True, only list files without deleting
+            case_sensitive: Whether to handle paths case-sensitively
+
+        Returns:
+            List of orphan file paths that were/would be deleted
+        """
+        try:
+            from pyarrow.fs import FileSystem, FileSelector, FileType
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("PyArrow required for orphan file deletion") from e
+
+        # 1. Get the filesystem from table's IO
+        fs = self._get_filesystem()
+
+        # 2. List all files in table location
+        all_files = self._list_all_files(fs)
+
+        # 3. Get valid files from metadata
+        valid_files = self._get_valid_files()
+
+        # 4. Find orphan candidates
+        orphans = self._find_orphans(
+            all_files=all_files,
+            valid_files=valid_files,
+            fs=fs,
+            older_than=older_than
+        )
+
+        # 5. Delete if not dry run
+        if not dry_run:
+            self._delete_files(orphans)
+
+        return sorted(orphans)
+
+    def _get_filesystem(self) -> FileSystem:
+        """Get filesystem based on table's location URI."""
+        try:
+            from pyarrow.fs import S3FileSystem
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError("PyArrow required for filesystem operations") from e
+
+        if self.location().startswith("s3://"):
+            # Use S3FileSystem for S3/MinIO
+            return S3FileSystem(
+                endpoint_override="http://localhost:9000",  # MinIO endpoint
+                access_key="admin",                   # MinIO access key
+                secret_key="password",                   # MinIO secret key
+                region="us-east-1"                         # Default region
+            )
+    
+
+    def _list_all_files(self, fs: FileSystem) -> Set[str]:
+        """Recursively list all files in table's data location."""
+        selector = FileSelector(self.location, recursive=True)
+        return {
+            file_info.path
+            for file_info in fs.get_file_info(selector)
+            if file_info.type == FileType.File
+        }
+
+    def _get_valid_files(self) -> Set[str]:
+        """Collect all valid files referenced in metadata."""
+        valid_files = set()
+        for snapshot in self.metadata.snapshots:
+            for manifest in snapshot.manifests(io=self.io):
+                for entry in manifest.fetch_manifest_entry(io=self.io):
+                    valid_files.add(entry.data_file.file_path)
+        return valid_files
+
+    def _find_orphans(
+        self,
+        all_files: Set[str],
+        valid_files: Set[str],
+        fs: FileSystem,
+        older_than: Optional[datetime]
+    ) -> Set[str]:
+        """Identify orphan files meeting criteria."""
+        candidates = all_files - valid_files
+        
+        if not older_than:
+            return candidates
+            
+        return {
+            path for path in candidates
+            if fs.get_file_info(path).mtime < older_than.timestamp()
+        }
+
+    def _delete_files(self, paths: Set[str]) -> None:
+        """Delete files using table's IO."""
+        for path in paths:
+            self.io.delete(path)
     def scan(
         self,
         row_filter: Union[str, BooleanExpression] = ALWAYS_TRUE,
