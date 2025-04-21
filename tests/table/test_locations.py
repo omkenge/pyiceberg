@@ -20,6 +20,7 @@ import pytest
 
 from pyiceberg.partitioning import PartitionField, PartitionFieldValue, PartitionKey, PartitionSpec
 from pyiceberg.schema import Schema
+from pyiceberg.table import TableProperties
 from pyiceberg.table.locations import LocationProvider, load_location_provider
 from pyiceberg.transforms import IdentityTransform
 from pyiceberg.typedef import EMPTY_DICT
@@ -73,7 +74,7 @@ def test_custom_location_provider_not_found(caplog: Any) -> None:
 
 
 def test_object_storage_no_partition() -> None:
-    provider = load_location_provider(table_location="table_location", table_properties=EMPTY_DICT)
+    provider = load_location_provider(table_location="table_location", table_properties={"write.object-storage.enabled": "true"})
 
     location = provider.new_data_location("test.parquet")
     parts = location.split("/")
@@ -110,6 +111,7 @@ def test_object_storage_partitioned_paths_disabled(partition_key: Optional[Parti
     provider = load_location_provider(
         table_location="table_location",
         table_properties={
+            "write.object-storage.enabled": "true",
             "write.object-storage.partitioned-paths": "false",
         },
     )
@@ -130,6 +132,56 @@ def test_object_storage_partitioned_paths_disabled(partition_key: Optional[Parti
     ],
 )
 def test_hash_injection(data_file_name: str, expected_hash: str) -> None:
-    provider = load_location_provider(table_location="table_location", table_properties=EMPTY_DICT)
+    provider = load_location_provider(table_location="table_location", table_properties={"write.object-storage.enabled": "true"})
 
     assert provider.new_data_location(data_file_name) == f"table_location/data/{expected_hash}/{data_file_name}"
+
+
+def test_object_location_provider_write_data_path() -> None:
+    provider = load_location_provider(
+        table_location="s3://table-location/table",
+        table_properties={
+            "write.object-storage.enabled": "true",
+            TableProperties.WRITE_DATA_PATH: "s3://table-location/custom/data/path",
+        },
+    )
+
+    assert (
+        provider.new_data_location("file.parquet") == "s3://table-location/custom/data/path/0010/1111/0101/11011101/file.parquet"
+    )
+
+
+def test_simple_location_provider_write_data_path() -> None:
+    provider = load_location_provider(
+        table_location="table_location",
+        table_properties={
+            TableProperties.WRITE_DATA_PATH: "s3://table-location/custom/data/path",
+            "write.object-storage.enabled": "false",
+        },
+    )
+
+    assert provider.new_data_location("file.parquet") == "s3://table-location/custom/data/path/file.parquet"
+
+
+def test_location_provider_metadata_default_location() -> None:
+    provider = load_location_provider(table_location="table_location", table_properties=EMPTY_DICT)
+
+    assert provider.new_metadata_location("manifest.avro") == "table_location/metadata/manifest.avro"
+
+
+def test_location_provider_metadata_location_with_custom_path() -> None:
+    provider = load_location_provider(
+        table_location="table_location",
+        table_properties={TableProperties.WRITE_METADATA_PATH: "s3://table-location/custom/path"},
+    )
+
+    assert provider.new_metadata_location("metadata.json") == "s3://table-location/custom/path/metadata.json"
+
+
+def test_metadata_location_with_trailing_slash() -> None:
+    provider = load_location_provider(
+        table_location="table_location",
+        table_properties={TableProperties.WRITE_METADATA_PATH: "s3://table-location/custom/path/"},
+    )
+
+    assert provider.new_metadata_location("metadata.json") == "s3://table-location/custom/path/metadata.json"
