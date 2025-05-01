@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 from __future__ import annotations
-from pyiceberg.table.maintenance import OrphanFileCleanup
+
 import itertools
 import os
 import uuid
@@ -1248,21 +1248,7 @@ class Table:
         """
         with self.transaction() as tx:
             tx.dynamic_partition_overwrite(df=df, snapshot_properties=snapshot_properties)
-    def orphan_file_cleanup(self, dry_run: bool = True) -> Set[str]:
-        """Clean up orphan data files not referenced by table metadata.
-        
-        Example:
-            >>> table = catalog.load_table("my_table")
-            >>> orphans = table.orphan_file_cleanup(dry_run=True)
-            >>> print(f"Found {len(orphans)} orphan files")
-        
-        Args:
-            dry_run: If True, only identify files without deletion
-            
-        Returns:
-            Set of orphan file paths
-        """
-        return OrphanFileCleanup(self, dry_run).execute()
+    
     def overwrite(
         self,
         df: pa.Table,
